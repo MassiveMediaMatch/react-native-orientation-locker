@@ -41,7 +41,7 @@ import javax.annotation.Nullable;
 
 public class OrientationModule extends ReactContextBaseJavaModule implements LifecycleEventListener{
 
-    final BroadcastReceiver mReceiver;
+    private BroadcastReceiver mReceiver;
     final OrientationEventListener mOrientationListener;
     final ReactApplicationContext ctx;
     private boolean isLocked = false;
@@ -100,7 +100,18 @@ public class OrientationModule extends ReactContextBaseJavaModule implements Lif
            mOrientationListener.disable();
         }
 
-        mReceiver = new BroadcastReceiver() {
+        this.createReceiver();
+
+        ctx.addLifecycleEventListener(this);
+    }
+
+    @Override
+    public String getName() {
+        return "Orientation";
+    }
+
+	private void createReceiver() {
+		mReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
 
@@ -119,14 +130,7 @@ public class OrientationModule extends ReactContextBaseJavaModule implements Lif
 
             }
         };
-
-        ctx.addLifecycleEventListener(this);
-    }
-
-    @Override
-    public String getName() {
-        return "Orientation";
-    }
+	}
 
     private String getCurrentOrientation() {
 
@@ -345,6 +349,8 @@ public class OrientationModule extends ReactContextBaseJavaModule implements Lif
 
         final Activity activity = getCurrentActivity();
         if (activity == null) return;
+		if (this.mReceiver != null) return;
+		this.createReceiver();
         activity.registerReceiver(mReceiver, new IntentFilter("onConfigurationChanged"));
     }
     @Override
@@ -353,12 +359,13 @@ public class OrientationModule extends ReactContextBaseJavaModule implements Lif
         mOrientationListener.disable();
 
         final Activity activity = getCurrentActivity();
-        if (activity == null) return;
+        if (activity == null || this.mReceiver == null) return;
         try
         {
             activity.unregisterReceiver(mReceiver);
+			mReceiver = null;
         }
-        catch (java.lang.IllegalArgumentException e) {
+        catch (Exception e) {
             FLog.w(ReactConstants.TAG, "Receiver already unregistered", e);
         }
     }
@@ -369,12 +376,13 @@ public class OrientationModule extends ReactContextBaseJavaModule implements Lif
         mOrientationListener.disable();
 
         final Activity activity = getCurrentActivity();
-        if (activity == null) return;
+        if (activity == null || this.mReceiver == null) return;
         try
         {
             activity.unregisterReceiver(mReceiver);
+			mReceiver = null;
         }
-        catch (java.lang.IllegalArgumentException e) {
+        catch (Exception e) {
             FLog.w(ReactConstants.TAG, "Receiver already unregistered", e);
         }
     }
